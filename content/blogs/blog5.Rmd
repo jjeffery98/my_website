@@ -5,14 +5,14 @@ categories:
 date: "2020-09-07"
 description: Nullam et orci eu lorem consequat tincidunt vivamus et sagittis magna sed nunc rhoncus condimentum sem. In efficitur ligula tate urna. Maecenas massa sed magna lacinia magna pellentesque lorem ipsum dolor. Nullam et orci eu lorem consequat tincidunt. Vivamus et sagittis tempus.
 draft: false
-image: pic07.jpg
+image: gender-equality-culture.jpg
 keywords: ""
 slug: blog5
-title: Mask Acceptance
+title: Omega Gender Equality
 ---
 
 
-```{r, setup, echo=FALSE}
+```{r, setup, echo = FALSE}
 knitr::opts_chunk$set(
   message = FALSE, 
   warning = FALSE, 
@@ -29,135 +29,244 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r load-libraries,echo=FALSE}
+```{r load-libraries, echo = FALSE}
 library(tidyverse)  # Load ggplot2, dplyr, and all the other tidyverse packages
-library(janitor)
-library(skimr)
-library(vroom)
 library(mosaic)
+library(ggthemes)
+library(GGally)
+library(readxl)
 library(here)
+library(skimr)
+library(janitor)
+library(broom)
+library(tidyquant)
+library(infer)
+library(openintro)
+```
 
-#remotes::install_github("kjhealy/socviz")
-library(socviz)
+# Omega Group plc- Pay Discrimination
+
+
+At the last board meeting of Omega Group Plc., the headquarters of a large multinational company, the issue was raised that women were being discriminated in the company, in the sense that the salaries were not the same for male and female executives. A quick analysis of a sample of 50 employees (of which 24 men and 26 women) revealed that the average salary for men was about 8,700 higher than for women. This seemed like a considerable difference, so it was decided that a further analysis of the company salaries was warranted. 
+
+In this case study we were asked to carry out the analysis.The objective was to find out whether there is indeed a significant difference between the salaries of men and women, and whether the difference is due to discrimination or whether it is based on another, possibly valid, determining factor.
+
+## Loading the data
+
+
+```{r load_omega_data}
+omega <- read_csv(here::here("data", "omega.csv"))
+glimpse(omega) # examine the data frame
+
 ```
 
 
-## NYT mask use
+## Relationship Salary - Gender ?
 
-Github source for data https://github.com/nytimes/covid-19-data/tree/master/mask-use
+The data frame `omega`  contains the salaries for the sample of 50 executives in the company. In order to make a conclusion as to whether there is a significant difference between the salaries of the male and female executives, we performed a variety of different analyses, and checked to see if they all led to the same conclusion. Analysis types included:
+.	Confidence intervals
+.	Hypothesis testing
+.	Correlation analysis
+.	Regression
 
 
-## Getting the data 
+First we calculated summary statistics on salary by gender and created and printed a dataframe where, for each gender, we show the mean, SD, sample size, the t-critical, the SE, the margin of error, and the low/high endpoints of a 95% confidence interval
 
-```{r, read_data}
-#Source for data url <- "https://github.com/nytimes/covid-19-data/raw/master/mask-use/mask-use-by-county.csv"
+```{r, confint_single_valiables}
+# Summary Statistics of salary by gender
+mosaic::favstats (salary ~ gender, data=omega)
 
-nyt_mask_survey <- read_csv(here::here("data", "nyt_mask_survey.csv"))
+# Dataframe with two rows (male-female) and having as columns gender, mean, SD, sample size, 
+# the t-critical value, the standard error, the margin of error, 
+# and the low/high endpoints of a 95% confidence interval
+omega_gender_ci <- omega %>% 
+  group_by(gender) %>% 
+  summarise(mean_salary = mean(salary),
+            sd_salary = sd(salary),
+            sample_size = n(),
+            # get t-critical value with (n-1) degrees of freedom
+            t_critical = qt(0.975, sample_size-1),
+            se_salary = sd(salary)/sqrt(sample_size),
+            margin_of_error = t_critical * se_salary,
+            salary_low = mean_salary - margin_of_error,
+            salary_high = mean_salary + margin_of_error
+  ) %>% 
+  arrange(desc(mean_salary))
+omega_gender_ci
 
-nyt_mask_survey <- nyt_mask_survey %>%
-  clean_names() %>% 
-  mutate(
-    mostly_yes= frequently+always,
-    mostly_no = never+rarely,
-    delta = mostly_yes-mostly_no
-  )
+set.seed(1234)
+female_boot_salary <- omega %>% 
+  filter(gender == "female") %>% 
+  specify(response = salary) %>% 
+  generate(reps = 100, type = "bootstrap") %>% 
+  calculate(stat = "mean")
 
-glimpse(nyt_mask_survey)
+set.seed(1234)
+male_boot_salary <- omega %>% 
+  filter(gender == "male") %>% 
+  specify(response = salary) %>% 
+  generate(reps = 100, type = "bootstrap") %>% 
+  calculate(stat = "mean")
+
+female_percentile_ci <- female_boot_salary %>% 
+  get_confidence_interval(level = 0.95, type = "percentile")
+female_percentile_ci
+
+male_percentile_ci <- male_boot_salary %>% 
+  get_confidence_interval(level = 0.95, type = "percentile")
+male_percentile_ci
+
+# correlation analysis
+salary_plot <- omega %>% 
+  ggplot(aes(x = salary, y = gender)) +
+  geom_boxplot() +
+  labs(title = "On Average, Men earn more than Women", subtitle = "Box Plot of Salary Earnings by Gender") + theme(axis.title = element_text(size = 9), 
+    plot.title = element_text(size = 17)) +labs(x = "Salary", y = "Gender")
+
+salary_plot
 ```
 
-## Choropleth map
-
-The FIPS code is a federal code that numbers states and territories of the US. It extends to the county level with an additional four digits, so every county in the US has a unique six-digit identifier, where the first two digits represent the state. 
-
-We will be using Kieran Healy's `socviz` package which among other things contains `county_map` and `county_data`  
-
-```{r}
-# America’s choropleths; use county_map that has all polygons 
-# and county data with demographics/election data from socviz datafile
-# The id field is the FIPS code for the county
-county_map %>% 
-  sample_n(5)
-
-county_data %>%
-    sample_n(5)
 
 
-glimpse(county_data)
-# we have data on 3195 FIPS....
+> Conclusion: Men earn more on average than women, with a considerably higher median salary. The boxplot also indicates that the average salary for each gender is not influenced by outlier values.
 
-glimpse(county_map)
-# ... but to create a map, we translate these 3195 counties to 191,382 polygons!
+Hypothesis testing can also be run, assuming as a null hypothesis that the mean difference in salaries is zero, or that, on average, men and women make the same amount of money. Here we run a hypothesis test using `t.test()` and the simulation method from the `infer` package.
+
+```{r, hypothesis_testing}
+# hypothesis testing using t.test() 
+
+ttest <- t.test(salary ~ gender, data = omega)
+ttest
+# 95% confidence interval does not include 0, therefore must reject the null hypothesis
+# hypothesis testing using infer package
 
 
+salary_in_null_world <- omega %>% 
+  specify(salary ~ gender) %>% 
+  hypothesise(null = "independence") %>% 
+  generate(reps = 1000, type = "permute") %>%
+  calculate(stat = "diff in means",
+            order = c("male", "female"))
+salary_in_null_world
 
+visualise(salary_in_null_world, bins = 10) +
+  shade_p_value(obs_stat = ttest$stderr, direction = "right")
+
+ttest$stderr
 
 ```
 
-## Joing the files
-
-We have three files
-
-1. `nyt_mask_survey`, our NYT survey data, 
-1. `county_map` that has all polygons that define a county
-1. `county_data` with demographics/election data.
+> The t-test produces a p-value of 0.0002 which is less than 0.05 (a common threshold for significant results). This shows that the observed sample mean difference is not due to sample error, but because there is a significant difference between the earnings of men and women at Omega.
 
 
+## Relationship Experience - Gender?
 
-```{r, join_data}
+At the board meeting, someone raised the issue that there was indeed a substantial difference between male and female salaries, but that this was attributable to other reasons such as differences in experience. A questionnaire send out to the 50 executives in the sample reveals that the average experience of the men is approximately 21 years, whereas the women only have about 7 years experience on average (see table below).
 
+```{r, experience_stats}
+# Summary Statistics of salary by gender
+favstats (experience ~ gender, data=omega)
 
-county_full <- left_join(county_map, county_data, by = "id")
-
-county_masks_full <- left_join(county_full, nyt_mask_survey, 
-                                by = c("id"="countyfp"))
 ```
 
-## Building our choropleth plot
-
-```{r, plot_choropleths, cache=TRUE}
-
-p <- ggplot(data = county_masks_full,
-            mapping = aes(x = long, y = lat,
-                          fill = delta, 
-                          group = group))
-
-p1 <- p + 
-  geom_polygon(color = "gray90", size = 0.05) + 
-  coord_equal()
+Based on this evidence, can you conclude that there is a significant difference between the experience of the male and female executives? Perform similar analyses as in the previous section. Does your conclusion validate or endanger your conclusion about the difference in male and female salaries?  
 
 
+```{r, experience_analysis}
+# Summary Statistics of salary by gender
+favstats (experience ~ gender, data=omega)
+omega_experience_ci <- omega %>% 
+  group_by(gender) %>% 
+  summarise(mean_experience = mean(experience),
+            sd_experience = sd(experience),
+            sample_size_exp = n(),
+            # get t-critical value with (n-1) degrees of freedom
+            t_critical_exp = qt(0.975, sample_size_exp-1),
+            se_salary_exp = sd(experience)/sqrt(sample_size_exp),
+            margin_of_error_exp = t_critical_exp * se_salary_exp,
+            salary_low_exp = mean_experience - margin_of_error_exp,
+            salary_high_exp = mean_experience + margin_of_error_exp
+  ) %>% 
+  arrange(desc(mean_experience))
+omega_experience_ci
 
-p2 <- p1 + 
-  scale_fill_gradient(low = '#ffffcc', high= '#006837')
+set.seed(1234)
+female_boot_experience <- omega %>% 
+  filter(gender == "female") %>% 
+  specify(response = experience) %>% 
+  generate(reps = 100, type = "bootstrap") %>% 
+  calculate(stat = "mean")
 
-p3 <- p1 + 
-  scale_fill_gradient2()
+set.seed(1234)
+male_boot_experience <- omega %>% 
+  filter(gender == "male") %>% 
+  specify(response = experience) %>% 
+  generate(reps = 100, type = "bootstrap") %>% 
+  calculate(stat = "mean")
 
-# get different colours from https://colorbrewer2.org/
-# the one shown here is https://colorbrewer2.org/#type=diverging&scheme=BrBG&n=6
-p4 <- p1 + 
-  scale_fill_gradientn(colours = c('#8c510a','#d8b365','#f6e8c3','#c7eae5','#5ab4ac','#01665e'))
+female_percentile_ci_exp <- female_boot_experience %>% 
+  get_confidence_interval(level = 0.95, type = "percentile")
+female_percentile_ci_exp
 
-p1
-p2
-p3
-p4
+male_percentile_ci_exp <- male_boot_experience %>% 
+  get_confidence_interval(level = 0.95, type = "percentile")
+male_percentile_ci_exp
+
+# correlation analysis
+experience_plot <- omega %>% 
+  ggplot(aes(x = experience, y = gender)) +
+  geom_boxplot() +
+  labs(title = "Men at Omega Have More Experience", subtitle = "Box Plot of Experience by Gender") + theme(axis.title = element_text(size = 9), 
+    plot.title = element_text(size = 17)) +labs(x = "Years of Experience", y = "")
+
+experience_plot
+
+# hypothesis testing using t.test() 
+
+ttest_exp <- t.test(experience ~ gender, data = omega)
+ttest_exp
+# 95% confidence interval does not include 0, therefore must reject the null hypothesis
+# hypothesis testing using infer package
 
 
-p4 + labs(fill = "Mask acceptance, (Mostly Yes - Mostly No)", 
-          caption = "“Estimates from The New York Times, based on roughly 250,000 interviews \nconducted by Dynata from July 2 to July 14, 2020”") +
-  guides(fill = guide_legend(nrow = 1)) + 
-  theme_map() + 
-  theme(legend.position = "bottom")
+experience_in_null_world <- omega %>% 
+  specify(experience ~ gender) %>% 
+  hypothesise(null = "independence") %>% 
+  generate(reps = 1000, type = "permute") %>%
+  calculate(stat = "diff in means",
+            order = c("male", "female"))
+experience_in_null_world
+
+visualise(experience_in_null_world, bins = 10) +
+  shade_p_value(obs_stat = ttest_exp$stderr, direction = "right")
+
+ttest_exp$stderr
+```
+> After conducting the same analysis on years of experience, we can see that men have considerably more experience than women. From t-tests and hypothesis testing, we calculated a p-value of 0.00001, suggesting that the observed sample mean difference is statistically significant, and not due to sampling error. Consequently, this means that the discrepencies in salary between men and women cannot necessarily be explained by gender, but may be due to the difference in experience between genders.
+
+## Relationship Salary - Experience ?
+
+Someone at the meeting argues that clearly, a more thorough analysis of the relationship between salary and experience is required before any conclusion can be drawn about whether there is any gender-based salary discrimination in the company.
+
+Analyse the relationship between salary and experience. Draw a scatterplot to visually inspect the data
+
+
+```{r, salary_exp_scatter}
+ggplot(data = omega, aes( x = experience, y = salary)) +
+  geom_point() +
+  geom_smooth()
+
+```
+> The scatterplot shows a positive relationship between salary and experience. While correlation does not necessarily imply causation, in this case we have also explored other factors such as gender. Therefore it is possible that more years of experience does result in a higher salary.
+
+## Check correlations between the data
+We used `GGally:ggpairs()` to create a scatterplot and correlation matrix. Essentially, this changes the order our variables will appear in and have the dependent variable (Y), salary, as last in our list. We then pipe the dataframe to `ggpairs()` with `aes` arguments to colour by `gender` and make the plots somewhat transparent (`alpha  = 0.3`).
+
+```{r, ggpairs}
+omega %>% 
+  select(gender, experience, salary) %>% #order variables they will appear in ggpairs()
+  ggpairs(aes(colour=gender, alpha = 0.3))+
+  theme_bw()
 ```
 
-## Checking for relationships
-
-Does mask use acceptance have any relation with some demographics? Let us explor the relationship between country household income, population, and % who voted republican in 2016
-
-```{r, ggpairs, cache=TRUE}
-county_masks_full %>% 
-  select(hh_income, pop, per_gop_2016, delta) %>% 
-  GGally::ggpairs()+
-  theme_minimal()
-```
+> The salary vs experience scatterplot indicates that more experience results in a higher salary, regardless of gender. This suggests that rather than gender-based salary discrimination, the difference in salary between men and women is due to men at Omega having more experience, and more experience correlates to a higher salary.
