@@ -92,9 +92,9 @@ disqusShortname = ""
     # Display your showcases here.
     
     [[params.tiles.showcase]]
-      title = "NYT Masks"
-      subtitle = "Ipsum Dolor Sit Amet"
-      image = "pic01.jpg"
+      title = "Omega Gender Equality"
+      subtitle = "Exploring Pay Discrimination"
+      image = "gender-equality-culture"
       url = "blogs/blog5"
 
     [[params.tiles.showcase]]
@@ -138,14 +138,13 @@ disqusShortname = ""
   # Section Type Two
   [params.two]
     enable = true
-    title = "Massa libero"
-    subtitle = """Nullam et orci eu lorem consequat tincidunt vivamus et sagittis libero. 
-    Mauris aliquet magna magna sed nunc rhoncus pharetra. 
-    Pellentesque condimentum sem. In efficitur ligula tate urna. Maecenas laoreet massa vel lacinia pellentesque lorem ipsum dolor. 
-    Nullam et orci eu lorem consequat tincidunt. Vivamus et sagittis libero.
-    Mauris aliquet magna magna sed nunc rhoncus amet pharetra et feugiat tempus."""
-    buttonText = "Get Started"
-    url = "blogs"
+    title = "About Me"
+    subtitle = """During my undergraduate degree in Management at The University of Bath I was able to explore a range of disciplines, from Economics, Marketing, Finance, Operations Management and Brand Development. 
+    Whilst I enjoyed this wide scope, I also appreciated the ability to tailor my optional modules towards my interests in data, studying Business Forecasting, Business Analytics in my Second Year. 
+    This inspired me to look for data analytics roles when looking for my placement in 3rd year, ending up with a role at The Walt Disney Company. Here I was able to learn Adobe Analytics, Tableau and basic SQL.
+    Upon returning for Final Year, I'd set my sights on the new Masters in Analytics & Management programme at London Business School as a way to further my data literacy skills. Now at LBS, I am looking to move into strategy management consultancy."""
+    #buttonText = "Get Started"
+    #url = "blogs"
 
 
   # Contact section
