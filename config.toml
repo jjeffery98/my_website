@@ -143,7 +143,7 @@ disqusShortname = ""
     Whilst I enjoyed this wide scope, I also appreciated the ability to tailor my optional modules towards my interests in data, studying Business Forecasting, Business Analytics in my Second Year. 
     This inspired me to look for data analytics roles when looking for my placement in 3rd year, ending up with a role at The Walt Disney Company. Here I was able to learn Adobe Analytics, Tableau and basic SQL.
     Upon returning for Final Year, I'd set my sights on the new Masters in Analytics & Management programme at London Business School as a way to further my data literacy skills. Now at LBS, I am looking to move into strategy management consultancy."""
-    #buttonText = "Get Started"
+    buttonText = "Back To Top"
     #url = "blogs"
 
 
