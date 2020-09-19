@@ -94,7 +94,7 @@ disqusShortname = ""
     [[params.tiles.showcase]]
       title = "Omega Gender Equality"
       subtitle = "Exploring Pay Discrimination"
-      image = "gender-equality-culture"
+      image = "gender-equality-culture.jpg"
       url = "blogs/blog6"
 
     [[params.tiles.showcase]]
