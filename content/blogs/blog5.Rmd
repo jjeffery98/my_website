@@ -5,12 +5,13 @@ categories:
 date: "2020-09-07"
 description: Nullam et orci eu lorem consequat tincidunt vivamus et sagittis magna sed nunc rhoncus condimentum sem. In efficitur ligula tate urna. Maecenas massa sed magna lacinia magna pellentesque lorem ipsum dolor. Nullam et orci eu lorem consequat tincidunt. Vivamus et sagittis tempus.
 draft: false
-image: gender-equality-culture.jpg
+image: bike.jpg
 keywords: ""
 slug: blog5
-title: Omega Gender Equality
+title: London Bikes
 ---
 
+In this project I looked at usage of the 'Santander' bikes (previously dubbed 'Boris Bikes') in London, from 2011 - 2020.
 
 ```{r, setup, echo = FALSE}
 knitr::opts_chunk$set(
@@ -44,229 +45,112 @@ library(infer)
 library(openintro)
 ```
 
-# Omega Group plc- Pay Discrimination
+First let's load the data.
 
-
-At the last board meeting of Omega Group Plc., the headquarters of a large multinational company, the issue was raised that women were being discriminated in the company, in the sense that the salaries were not the same for male and female executives. A quick analysis of a sample of 50 employees (of which 24 men and 26 women) revealed that the average salary for men was about 8,700 higher than for women. This seemed like a considerable difference, so it was decided that a further analysis of the company salaries was warranted. 
-
-In this case study we were asked to carry out the analysis.The objective was to find out whether there is indeed a significant difference between the salaries of men and women, and whether the difference is due to discrimination or whether it is based on another, possibly valid, determining factor.
-
-## Loading the data
-
-
-```{r load_omega_data}
-omega <- read_csv(here::here("data", "omega.csv"))
-glimpse(omega) # examine the data frame
+```{r}
+bike <- read_csv(here::here("data", "londonBikes.csv"))
 
 ```
 
+I'm interested in looking at bike usage over time, however the data set only includes a singular column with the date. For my analysis, I will need to look usage by year, month, day and day of the week. In order to do this, we use the `lubridate` package to convert our `date` variable into these new variables.
 
-## Relationship Salary - Gender ?
+```{r}
+# Fix dates using lubridate, and generate new variables for year, month, month_name, day, and day_of_week
+bike <- bike %>%   
+  mutate(
+    date=dmy(date),
+    year=year(date),
+    month = month(date),
+    month_name=month(date, label = TRUE),
+    day = day(date),
+    day_of_week = wday(date, label = TRUE)) 
+```
 
-The data frame `omega`  contains the salaries for the sample of 50 executives in the company. In order to make a conclusion as to whether there is a significant difference between the salaries of the male and female executives, we performed a variety of different analyses, and checked to see if they all led to the same conclusion. Analysis types included:
-.	Confidence intervals
-.	Hypothesis testing
-.	Correlation analysis
-.	Regression
+Now let's look at how usage varies by season.
 
+```{r}
+# generate new variable season_name to turn seasons from numbers to Winter, Spring, etc
+bike_season <- bike %>%  
+  mutate(
+    season_name = case_when(
+      season == 1 ~ "Winter",
+      season == 2 ~ "Spring",
+      season == 3 ~ "Summer",
+      season == 4 ~ "Autumn"
+                            ),
+    
+    #relevel the factor, otherwise it would have seasons in alphabetical order
+    season_name = fct_relevel(season_name, "Winter", "Spring", "Summer", "Autumn"),
+  )
 
-First we calculated summary statistics on salary by gender and created and printed a dataframe where, for each gender, we show the mean, SD, sample size, the t-critical, the SE, the margin of error, and the low/high endpoints of a 95% confidence interval
-
-```{r, confint_single_valiables}
-# Summary Statistics of salary by gender
-mosaic::favstats (salary ~ gender, data=omega)
-
-# Dataframe with two rows (male-female) and having as columns gender, mean, SD, sample size, 
-# the t-critical value, the standard error, the margin of error, 
-# and the low/high endpoints of a 95% confidence interval
-omega_gender_ci <- omega %>% 
-  group_by(gender) %>% 
-  summarise(mean_salary = mean(salary),
-            sd_salary = sd(salary),
-            sample_size = n(),
-            # get t-critical value with (n-1) degrees of freedom
-            t_critical = qt(0.975, sample_size-1),
-            se_salary = sd(salary)/sqrt(sample_size),
-            margin_of_error = t_critical * se_salary,
-            salary_low = mean_salary - margin_of_error,
-            salary_high = mean_salary + margin_of_error
-  ) %>% 
-  arrange(desc(mean_salary))
-omega_gender_ci
-
-set.seed(1234)
-female_boot_salary <- omega %>% 
-  filter(gender == "female") %>% 
-  specify(response = salary) %>% 
-  generate(reps = 100, type = "bootstrap") %>% 
-  calculate(stat = "mean")
-
-set.seed(1234)
-male_boot_salary <- omega %>% 
-  filter(gender == "male") %>% 
-  specify(response = salary) %>% 
-  generate(reps = 100, type = "bootstrap") %>% 
-  calculate(stat = "mean")
-
-female_percentile_ci <- female_boot_salary %>% 
-  get_confidence_interval(level = 0.95, type = "percentile")
-female_percentile_ci
-
-male_percentile_ci <- male_boot_salary %>% 
-  get_confidence_interval(level = 0.95, type = "percentile")
-male_percentile_ci
-
-# correlation analysis
-salary_plot <- omega %>% 
-  ggplot(aes(x = salary, y = gender)) +
+plot_season <- bike_season %>% 
+  ggplot(aes(x = bikes_hired, y = season_name)) +
   geom_boxplot() +
-  labs(title = "On Average, Men earn more than Women", subtitle = "Box Plot of Salary Earnings by Gender") + theme(axis.title = element_text(size = 9), 
-    plot.title = element_text(size = 17)) +labs(x = "Salary", y = "Gender")
-
-salary_plot
+  labs(title = "Highest Bike Usage in Summer", 
+       subtitle = "Number of Bikes Hired by Season",
+       x = "Number of Bikes Hired",
+       y = "") +
+  theme_economist_white()
+plot_season
 ```
 
 
+```{r}
+# generate a new variable to turn day_of_week into Weekday and Weekend
 
-> Conclusion: Men earn more on average than women, with a considerably higher median salary. The boxplot also indicates that the average salary for each gender is not influenced by outlier values.
+bike_s_wk <- bike_season %>% 
+  mutate(working_week = case_when(
+         day_of_week == "Mon" ~ "Weekday",
+         day_of_week == "Tue" ~ "Weekday",
+         day_of_week == "Wed" ~ "Weekday",
+         day_of_week == "Thu" ~ "Weekday",
+         day_of_week == "Fri" ~ "Weekday",
+         day_of_week == "Sat" ~ "Weekend",
+         day_of_week == "Sun" ~ "Weekend"
+                                )
+        )
 
-Hypothesis testing can also be run, assuming as a null hypothesis that the mean difference in salaries is zero, or that, on average, men and women make the same amount of money. Here we run a hypothesis test using `t.test()` and the simulation method from the `infer` package.
-
-```{r, hypothesis_testing}
-# hypothesis testing using t.test() 
-
-ttest <- t.test(salary ~ gender, data = omega)
-ttest
-# 95% confidence interval does not include 0, therefore must reject the null hypothesis
-# hypothesis testing using infer package
-
-
-salary_in_null_world <- omega %>% 
-  specify(salary ~ gender) %>% 
-  hypothesise(null = "independence") %>% 
-  generate(reps = 1000, type = "permute") %>%
-  calculate(stat = "diff in means",
-            order = c("male", "female"))
-salary_in_null_world
-
-visualise(salary_in_null_world, bins = 10) +
-  shade_p_value(obs_stat = ttest$stderr, direction = "right")
-
-ttest$stderr
-
-```
-
-> The t-test produces a p-value of 0.0002 which is less than 0.05 (a common threshold for significant results). This shows that the observed sample mean difference is not due to sample error, but because there is a significant difference between the earnings of men and women at Omega.
-
-
-## Relationship Experience - Gender?
-
-At the board meeting, someone raised the issue that there was indeed a substantial difference between male and female salaries, but that this was attributable to other reasons such as differences in experience. A questionnaire send out to the 50 executives in the sample reveals that the average experience of the men is approximately 21 years, whereas the women only have about 7 years experience on average (see table below).
-
-```{r, experience_stats}
-# Summary Statistics of salary by gender
-favstats (experience ~ gender, data=omega)
-
-```
-
-Based on this evidence, can you conclude that there is a significant difference between the experience of the male and female executives? Perform similar analyses as in the previous section. Does your conclusion validate or endanger your conclusion about the difference in male and female salaries?  
-
-
-```{r, experience_analysis}
-# Summary Statistics of salary by gender
-favstats (experience ~ gender, data=omega)
-omega_experience_ci <- omega %>% 
-  group_by(gender) %>% 
-  summarise(mean_experience = mean(experience),
-            sd_experience = sd(experience),
-            sample_size_exp = n(),
-            # get t-critical value with (n-1) degrees of freedom
-            t_critical_exp = qt(0.975, sample_size_exp-1),
-            se_salary_exp = sd(experience)/sqrt(sample_size_exp),
-            margin_of_error_exp = t_critical_exp * se_salary_exp,
-            salary_low_exp = mean_experience - margin_of_error_exp,
-            salary_high_exp = mean_experience + margin_of_error_exp
-  ) %>% 
-  arrange(desc(mean_experience))
-omega_experience_ci
-
-set.seed(1234)
-female_boot_experience <- omega %>% 
-  filter(gender == "female") %>% 
-  specify(response = experience) %>% 
-  generate(reps = 100, type = "bootstrap") %>% 
-  calculate(stat = "mean")
-
-set.seed(1234)
-male_boot_experience <- omega %>% 
-  filter(gender == "male") %>% 
-  specify(response = experience) %>% 
-  generate(reps = 100, type = "bootstrap") %>% 
-  calculate(stat = "mean")
-
-female_percentile_ci_exp <- female_boot_experience %>% 
-  get_confidence_interval(level = 0.95, type = "percentile")
-female_percentile_ci_exp
-
-male_percentile_ci_exp <- male_boot_experience %>% 
-  get_confidence_interval(level = 0.95, type = "percentile")
-male_percentile_ci_exp
-
-# correlation analysis
-experience_plot <- omega %>% 
-  ggplot(aes(x = experience, y = gender)) +
+plot_working <- bike_s_wk %>% 
+  ggplot(aes(x = bikes_hired, y = working_week)) +
   geom_boxplot() +
-  labs(title = "Men at Omega Have More Experience", subtitle = "Box Plot of Experience by Gender") + theme(axis.title = element_text(size = 9), 
-    plot.title = element_text(size = 17)) +labs(x = "Years of Experience", y = "")
+  theme_economist_white() +
+  labs(title = "More Bikes Hired During the Week", 
+       subtitle = "Potentially misleading as more weekdays than weekend-days", 
+       x = "Number of Bikes Hired",
+       y = "")
 
-experience_plot
-
-# hypothesis testing using t.test() 
-
-ttest_exp <- t.test(experience ~ gender, data = omega)
-ttest_exp
-# 95% confidence interval does not include 0, therefore must reject the null hypothesis
-# hypothesis testing using infer package
-
-
-experience_in_null_world <- omega %>% 
-  specify(experience ~ gender) %>% 
-  hypothesise(null = "independence") %>% 
-  generate(reps = 1000, type = "permute") %>%
-  calculate(stat = "diff in means",
-            order = c("male", "female"))
-experience_in_null_world
-
-visualise(experience_in_null_world, bins = 10) +
-  shade_p_value(obs_stat = ttest_exp$stderr, direction = "right")
-
-ttest_exp$stderr
-```
-> After conducting the same analysis on years of experience, we can see that men have considerably more experience than women. From t-tests and hypothesis testing, we calculated a p-value of 0.00001, suggesting that the observed sample mean difference is statistically significant, and not due to sampling error. Consequently, this means that the discrepencies in salary between men and women cannot necessarily be explained by gender, but may be due to the difference in experience between genders.
-
-## Relationship Salary - Experience ?
-
-Someone at the meeting argues that clearly, a more thorough analysis of the relationship between salary and experience is required before any conclusion can be drawn about whether there is any gender-based salary discrimination in the company.
-
-Analyse the relationship between salary and experience. Draw a scatterplot to visually inspect the data
-
-
-```{r, salary_exp_scatter}
-ggplot(data = omega, aes( x = experience, y = salary)) +
-  geom_point() +
-  geom_smooth()
+plot_working
 
 ```
-> The scatterplot shows a positive relationship between salary and experience. While correlation does not necessarily imply causation, in this case we have also explored other factors such as gender. Therefore it is possible that more years of experience does result in a higher salary.
 
-## Check correlations between the data
-We used `GGally:ggpairs()` to create a scatterplot and correlation matrix. Essentially, this changes the order our variables will appear in and have the dependent variable (Y), salary, as last in our list. We then pipe the dataframe to `ggpairs()` with `aes` arguments to colour by `gender` and make the plots somewhat transparent (`alpha  = 0.3`).
+Weekday hires are higher than weekend hires. However, this is to be expected as there are more 'week' days than 'weekend' days. Therefore, this plot is misleading, and we need to look at the average number of bikes hired for a weekday vs a weekend day in order for the numbers to be comparable.
 
-```{r, ggpairs}
-omega %>% 
-  select(gender, experience, salary) %>% #order variables they will appear in ggpairs()
-  ggpairs(aes(colour=gender, alpha = 0.3))+
-  theme_bw()
+```{r}
+
+
+bike_av_working <- bike_s_wk %>%
+   group_by(year, season_name, month, working_week) %>%
+   summarise(bikes_hired) %>% 
+   mutate(no_weekdays = count(working_week = "Weekday", na.rm = FALSE),
+          no_weekend = count(working_week = "Weekend", na.rm = FALSE),
+          average_bikes = case_when(
+          working_week == "Weekday" ~ sum(bikes_hired)/no_weekday,
+          working_week == "Weekend" ~ sum(bikes_hired)/no_weekend,
+          TRUE ~ NA
+                                     )
+          ) %>% 
+   group_by(season_name, working_week) %>% 
+   summarise(average_bikes)
+
+plot_working_av <- bike_av_working %>% 
+  ggplot(aes(x = average_bikes, y = working_week)) +
+  geom_boxplot() +
+  theme_economist_white() +
+  labs(title = "", 
+       subtitle = "", 
+       x = "",
+       y = "")
+
+plot_working_av
+
 ```
-
-> The salary vs experience scatterplot indicates that more experience results in a higher salary, regardless of gender. This suggests that rather than gender-based salary discrimination, the difference in salary between men and women is due to men at Omega having more experience, and more experience correlates to a higher salary.
