@@ -1,0 +1,157 @@
+---
+categories:
+- ""
+- ""
+date: "2020-09-07"
+description: Nullam et orci eu lorem consequat tincidunt vivamus et sagittis magna sed nunc rhoncus condimentum sem. In efficitur ligula tate urna. Maecenas massa sed magna lacinia magna pellentesque lorem ipsum dolor. Nullam et orci eu lorem consequat tincidunt. Vivamus et sagittis tempus.
+draft: false
+image: tfl_monthly.png
+keywords: ""
+slug: blog6
+title: TFL Bike Rentals
+---
+
+
+```{r, setup, echo = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, 
+  warning = FALSE, 
+  tidy=FALSE,     # display code as typed
+  size="small")   # slightly smaller font for code
+options(digits = 3)
+
+# default figure size
+knitr::opts_chunk$set(
+  fig.width=6.75, 
+  fig.height=6.75,
+  fig.align = "center"
+)
+```
+
+
+```{r load-libraries, include=FALSE}
+library(tidyverse)  # Load ggplot2, dplyr, and all the other tidyverse packages
+library(mosaic)
+library(ggthemes)
+library(lubridate)
+library(here)
+library(skimr)
+library(janitor)
+library(httr)
+library(readxl)
+library(vroom)
+#install.packages(infer)
+```
+
+**Return to [Portfolio site](https://johanna-jeffery-portfolio.netlify.app)**
+
+# Challenge: TFL Bike Rentals
+
+![](/Users/Johanna 1/Documents/Academics/LBS/Term 1/Applied Statistics/Git/my_website2/my_website/Images_test/tfl_monthly.png)
+
+For this challenge, we aim to recreate the visual above using data on daily bike rides from TFL.
+
+Let's bring in the data.
+
+```{r, get_tfl_data, cache=TRUE}
+url <- "https://data.london.gov.uk/download/number-bicycle-hires/ac29363e-e0cb-47cc-a97a-e216d900a6b0/tfl-daily-cycle-hires.xlsx"
+
+# Downloading TFL data to temporary file
+httr::GET(url, write_disk(bike.temp <- tempfile(fileext = ".xlsx")))
+
+# Using read_excel to read it as dataframe
+bike0 <- read_excel(bike.temp,
+                   sheet = "Data",
+                   range = cell_cols("A:B"))
+
+# Changing dates to get year, month, and week
+bike <- bike0 %>% 
+  clean_names() %>% 
+  rename (bikes_hired = number_of_bicycle_hires) %>% 
+  mutate (year = year(day),
+          month = lubridate::month(day, label = TRUE),
+          week = isoweek(day)) %>% 
+  filter(year>=2015)
+
+
+
+```
+
+The following produces monthly changes in Tfl bike rentals faceted by year.
+
+```{r, fig.width=10, fig.height=4}
+
+# Let's calculate the expected number of rides per month by using the mean
+expected_monthly_rides <- bike %>%
+  group_by(month) %>%
+  summarise(avg_monthly_rides = mean(bikes_hired))
+  
+expected_monthly_rides
+
+# calculating the actual mean of bikes hired.    
+actual_monthly_rides <- bike %>% 
+  group_by(year, month) %>% 
+  summarise(mean_actual_rides = mean(bikes_hired)) 
+
+actual_monthly_rides
+
+# In order to calculate excess rentals and plot them both together, 
+# we need to join the actual and expected hires together in one table.
+
+excess_rentals_table <- left_join(actual_monthly_rides, 
+                                  expected_monthly_rides, by="month"
+                                  ) %>% 
+  mutate(excess_rentals = mean_actual_rides - avg_monthly_rides)
+
+# Let's create the plot
+plot_A <- excess_rentals_table %>%
+  ggplot(aes(x = month)) +
+  
+  # Creating a green filled ribbon to show excess rentals
+  
+  geom_ribbon(aes(
+              group = 1,
+              ymin = avg_monthly_rides,
+              ymax = pmax(avg_monthly_rides, mean_actual_rides)),
+              fill = "#C8E8Cb", 
+              alpha=0.9
+              ) +
+  # Creating a red filled ribbon to show lack of rentals
+  
+  geom_ribbon(aes(
+              group = 1,
+              ymin = pmax(avg_monthly_rides, mean_actual_rides),
+              ymax = mean_actual_rides),
+              fill = "#EAB5B7", 
+              alpha=0.9
+              ) +
+  
+  # Adding a line to plot the actual rides
+  
+  geom_line(aes(y = mean_actual_rides), group = 1, size = 0.2) +
+  
+  # Adding a line to plot the average rides
+  
+  geom_line(aes(y = avg_monthly_rides), group = 1, color="blue", size=0.5) +
+  
+  # Splitting the plot by year
+  
+  facet_wrap(~ year) +
+  
+  # Changing the aesthetics
+  
+  theme_minimal() +
+  theme(
+    plot.title=element_text(face="bold"),
+    legend.position = "none"
+  ) +
+  labs(
+    title= "Monthly changes in Tfl bike rentals",
+    subtitle = "Change from monthly average shown in blue \nand calculated between 2015-2019",
+    y = "Bike rentals",
+    x = "",
+    caption = "Source: Tfl, London Data Store"
+  )
+  
+plot_A
+```
