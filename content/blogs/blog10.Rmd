@@ -1,0 +1,132 @@
+---
+categories:
+- ""
+- ""
+date: "2020-09-07"
+description: Nullam et orci eu lorem consequat tincidunt vivamus et sagittis magna sed nunc rhoncus condimentum sem. In efficitur ligula tate urna. Maecenas massa sed magna lacinia magna pellentesque lorem ipsum dolor. Nullam et orci eu lorem consequat tincidunt. Vivamus et sagittis tempus.
+draft: false
+image: brexit.png
+keywords: ""
+slug: blog10
+title: Brexit
+---
+
+
+```{r, setup, echo = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, 
+  warning = FALSE, 
+  tidy=FALSE,     # display code as typed
+  size="small")   # slightly smaller font for code
+options(digits = 3)
+
+# default figure size
+knitr::opts_chunk$set(
+  fig.width=6.75, 
+  fig.height=6.75,
+  fig.align = "center"
+)
+```
+
+
+```{r load-libraries, echo = FALSE}
+library(tidyverse)  # Load ggplot2, dplyr, and all the other tidyverse packages
+library(mosaic)
+library(ggthemes)
+library(GGally)
+library(readxl)
+library(here)
+library(skimr)
+library(janitor)
+library(broom)
+library(tidyquant)
+library(infer)
+library(openintro)
+library(lubridate)
+library(httr)
+library(vroom)
+```
+
+**Return to [Portfolio site](https://johanna-jeffery-portfolio.netlify.app)**
+
+# Challenge: Political Affiliation and Leave Share in Brexit Referendum
+
+![](/Users/Johanna 1/Documents/Academics/LBS/Term 1/Applied Statistics/Git/my_website2/my_website/Images_test/brexit.png)
+
+
+```{r brexit_challenge, echo=FALSE, out.width="100%"}
+knitr::include_graphics(here::here("Images_test", "brexit_ref.png"), error = FALSE)
+```
+We are going to re-create the plot displayed above. 
+
+```{r}
+
+# load the data
+brexit_results <- read.csv(here::here("Data","brexit_results.csv"))
+glimpse(brexit_results)
+
+# define specifics for plot
+brexit_filtered <- brexit_results %>% 
+                    select(leave_share, lab_2015, ukip_2015, con_2015, ld_2015)
+
+skim(brexit_filtered)
+```
+
+
+``` {r, fig.width=10, fig.height=7, fig.align="center"}
+
+colors <- c("Labour"="#DC241f", "UKIP"="#EFE600", "Conservative"="#0087DC", "Lib Dems"="#FDBB30")
+
+brexit_plot <- ggplot(brexit_filtered, aes(y=leave_share)) +
+                  geom_point(aes(x=lab_2015,
+                               color="Labour"),   # color for Labour Party
+                               alpha=0.3           # reduce transparency of points
+                               ) +
+                    geom_smooth(aes(x=lab_2015,
+                                color="Labour"),
+                                alpha=0.3, 
+                                method=lm          # lm is method for smoothing when you want a straight line
+                                )+
+                    geom_point(aes(x=con_2015,
+                               color="Conservative"),   # color for Conservative and Unionist Party
+                               alpha=0.3
+                               )+
+                    geom_smooth(aes(x=con_2015,
+                                color="Conservative"),
+                                alpha=0.3, 
+                                method=lm
+                                )+
+                    geom_point(aes(x=ld_2015,
+                               color="Lib Dems"),   # color for Liberal Democrats
+                               alpha=0.3
+                               )+
+                    geom_smooth(aes(x=ld_2015,
+                                color="Lib Dems"),   
+                                alpha=0.3, 
+                                method=lm
+                                )+
+                    geom_point(aes(x=ukip_2015,
+                               color="UKIP"),   # color for UK Independence Party
+                               alpha=0.3
+                               )+
+                    geom_smooth(aes(x=ukip_2015,
+                                color="UKIP"),
+                                alpha=0.3, 
+                                method=lm
+                                ) +
+   labs(title = "How political affiliation translated to Brexit Voting", 
+        x = "Party % in the UK 2015 general election",   # changing axes titles
+        y = "Leave % in the 2016 Brexit referendum",
+        color = ""
+          ) +
+  scale_color_manual(values=colors) +
+  scale_x_discrete(limits=c(0 ,20, 40, 60, 80)) +        # change x axis scale
+  theme_bw() +                                           # white and grey theme
+  theme(
+    plot.title = element_text(face="bold"),   # bold title
+    legend.position = "bottom",               # change position of legend            
+    legend.direction = "horizontal"          # change orientation of legend
+    ) +        
+  NULL
+
+brexit_plot
