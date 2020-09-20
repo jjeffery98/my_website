@@ -106,7 +106,7 @@ disqusShortname = ""
     [[params.tiles.showcase]]
       title = "TFL Visualisation Challenge"
       subtitle = "Excess Monthly Bike Rentals"
-      image = "tfl_monthly.png"
+      image = "bikes.jpg"
       url = "blogs/blog8"
 
     [[params.tiles.showcase]]
