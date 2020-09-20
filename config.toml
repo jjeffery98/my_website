@@ -47,9 +47,9 @@ disqusShortname = ""
       name = "Home"
       url = "#"
 
-    #[[params.navigation.links]]
-      #name = "Projects"
-      #url = "blogs"
+    [[params.navigation.links]]
+      name = "Projects"
+      url = "blogs"
 
     #[[params.navigation.links]]
       #name = "Academic"
