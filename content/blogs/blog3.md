@@ -3,7 +3,7 @@ categories:
 - ""
 - ""
 date: "2017-10-31T22:26:13-05:00"
-description: Nullam et orci eu lorem consequat tincidunt vivamus et sagittis magna sed nunc rhoncus condimentum sem. In efficitur ligula tate urna. Maecenas massa sed magna lacinia magna pellentesque lorem ipsum dolor. Nullam et orci eu lorem consequat tincidunt. Vivamus et sagittis tempus.
+description: Recreating a visualisation showing monthly excess bike rentals in London.
 draft: false
 image: bikes.jpg
 keywords: ""
@@ -11,4 +11,3 @@ slug: tempus
 title: TFL Visualisation Challenge
 ---
 
-Recreating a visualisation showing monthly excess bike rentals in London.

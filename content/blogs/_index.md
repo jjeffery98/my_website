@@ -5,5 +5,3 @@ image: digital.jpg
 slug: blogs
 title: Projects
 ---
-
-My coding projects.

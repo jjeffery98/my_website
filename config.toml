@@ -47,13 +47,13 @@ disqusShortname = ""
       name = "Home"
       url = "#"
 
-    [[params.navigation.links]]
-      name = "Projects"
-      url = "blogs"
+    #[[params.navigation.links]]
+      #name = "Projects"
+      #url = "blogs"
 
-    [[params.navigation.links]]
-      name = "Academic"
-      url = "blogs/ipsum"
+    #[[params.navigation.links]]
+      #name = "Academic"
+      #url = "blogs/ipsum"
 
     #[[params.navigation.links]]
     #  name = "Elements"
