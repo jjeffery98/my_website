@@ -99,7 +99,7 @@ disqusShortname = ""
 
     [[params.tiles.showcase]]
       title = "Climate Change"
-      subtitle = "Feugiat Amet Tempus"
+      subtitle = "Temperature Anomalies with Nasa"
       image = "climate-change.jpg"
       url = "blogs/blog7"
 
